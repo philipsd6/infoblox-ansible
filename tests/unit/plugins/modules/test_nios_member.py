@@ -36,7 +36,6 @@ class TestNiosMemberModule(TestNiosModule):
         self.mock_wapi = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_member.WapiModule')
         self.exec_command = self.mock_wapi.start()
         self.mock_wapi_run = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_member.WapiModule.run')
-        self.mock_wapi_run.start()
         self.load_config = self.mock_wapi_run.start()
 
     def tearDown(self):
@@ -84,11 +83,11 @@ class TestNiosMemberModule(TestNiosModule):
         self.module.params = {'provider': None, 'state': 'present', 'host_name': 'test_member',
                               'vip_setting': {'address': '192.168.1.110', 'subnet_mask': '255.255.255.0', 'gateway': '192.168.1.1'},
                               'config_addr_type': 'IPV4', 'platform': 'VNIOS', 'comment': 'updated comment', 'extattrs': None}
-
+        ref = "member/b25lLnZpcnR1YWxfbm9kZSQ3:member01.ansible-dev.com"
         test_object = [
             {
                 "comment": "Created with Ansible",
-                "_ref": "member/b25lLnZpcnR1YWxfbm9kZSQ3:member01.ansible-dev.com",
+                "_ref": ref,
                 "config_addr_type": "IPV4",
                 "host_name": "member01.ansible-dev.com",
                 "platform": "VNIOS",
@@ -118,6 +117,12 @@ class TestNiosMemberModule(TestNiosModule):
         res = wapi.run('testobject', test_spec)
 
         self.assertTrue(res['changed'])
+        wapi.update_object.assert_called_once_with(
+            ref,
+            {'comment': 'updated comment', 'host_name': 'test_member',
+             'vip_setting': {'address': '192.168.1.110', 'subnet_mask': '255.255.255.0', 'gateway': '192.168.1.1'},
+             'config_addr_type': 'IPV4', 'platform': 'VNIOS'}
+        )
 
     def test_nios_member_remove(self):
         self.module.params = {'provider': None, 'state': 'absent', 'host_name': 'test_member',

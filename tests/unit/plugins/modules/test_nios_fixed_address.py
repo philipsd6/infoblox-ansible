@@ -36,7 +36,6 @@ class TestNiosFixedAddressModule(TestNiosModule):
         self.mock_wapi = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_fixed_address.WapiModule')
         self.exec_command = self.mock_wapi.start()
         self.mock_wapi_run = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_fixed_address.WapiModule.run')
-        self.mock_wapi_run.start()
         self.load_config = self.mock_wapi_run.start()
 
     def tearDown(self):
@@ -82,11 +81,12 @@ class TestNiosFixedAddressModule(TestNiosModule):
         self.module.params = {'provider': None, 'state': 'present', 'name': 'test_fa', 'ipaddr': '192.168.10.1', 'mac': '08:6d:41:e8:fd:e8',
                               'network': '192.168.10.0/24', 'network_view': 'default', 'comment': 'updated comment', 'extattrs': None}
 
+        ref = "network/ZG5zLm5ldHdvcmtfdmlldyQw:default/true"
         test_object = [
             {
                 "comment": "test comment",
                 "name": "test_fa",
-                "_ref": "network/ZG5zLm5ldHdvcmtfdmlldyQw:default/true",
+                "_ref": ref,
                 "ipaddr": "192.168.10.1",
                 "mac": "08:6d:41:e8:fd:e8",
                 "network": "192.168.10.0/24",
@@ -109,6 +109,16 @@ class TestNiosFixedAddressModule(TestNiosModule):
         res = wapi.run('testobject', test_spec)
 
         self.assertTrue(res['changed'])
+        wapi.update_object.assert_called_once_with(
+            ref,
+            {
+                'comment': 'updated comment',
+                'name': 'test_fa',
+                'ipaddr': '192.168.10.1',
+                'mac': '08:6d:41:e8:fd:e8',
+                'network': '192.168.10.0/24',
+            }
+        )
 
     def test_nios_fixed_address_ipv4_remove(self):
         self.module.params = {'provider': None, 'state': 'absent', 'name': 'test_fa', 'ipaddr': '192.168.10.1', 'mac': '08:6d:41:e8:fd:e8',
