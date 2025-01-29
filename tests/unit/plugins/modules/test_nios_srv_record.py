@@ -23,7 +23,6 @@ __metaclass__ = type
 from ansible_collections.infoblox.nios_modules.plugins.modules import nios_srv_record
 from ansible_collections.infoblox.nios_modules.plugins.module_utils import api
 from ansible_collections.infoblox.nios_modules.tests.unit.compat.mock import patch, MagicMock, Mock
-from ansible.module_utils.common.validation import check_type_dict
 from .test_nios_module import TestNiosModule, load_fixture
 
 
@@ -39,7 +38,6 @@ class TestNiosSRVRecordModule(TestNiosModule):
         self.mock_wapi = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_srv_record.WapiModule')
         self.exec_command = self.mock_wapi.start()
         self.mock_wapi_run = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_srv_record.WapiModule.run')
-        self.mock_wapi_run.start()
         self.load_config = self.mock_wapi_run.start()
         self.mock_check_type_dict = patch('ansible.module_utils.common.validation.check_type_dict')
         self.mock_check_type_dict_obj = self.mock_check_type_dict.start()
@@ -91,11 +89,11 @@ class TestNiosSRVRecordModule(TestNiosModule):
         self.module.params = {'provider': None, 'state': 'present', 'name': '_sip._tcp.service.ansible.com',
                               'port': 5080, 'target': 'service1.ansible.com', 'priority': 10, 'weight': 10,
                               'comment': None, 'extattrs': None}
-
+        ref = "srvrecord/ZG5zLm5ldHdvcmtfdmlldyQw:default/true"
         test_object = [
             {
                 "comment": "test comment",
-                "_ref": "srvrecord/ZG5zLm5ldHdvcmtfdmlldyQw:default/true",
+                "_ref": ref,
                 "name": "_sip._tcp.service.ansible.com",
                 'port': 5080,
                 "target": "mailhost.ansible.com",
@@ -119,6 +117,8 @@ class TestNiosSRVRecordModule(TestNiosModule):
         res = wapi.run('testobject', test_spec)
 
         self.assertTrue(res['changed'])
+        wapi.update_object.assert_called_once_with(ref, {'name': '_sip._tcp.service.ansible.com',
+                                                         'port': 5080, 'target': 'service1.ansible.com', 'priority': 10, 'weight': 10})
 
     def test_nios_srv_record_remove(self):
         self.module.params = {'provider': None, 'state': 'absent', 'name': '_sip._tcp.service.ansible.com',

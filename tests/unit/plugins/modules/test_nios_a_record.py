@@ -23,7 +23,6 @@ __metaclass__ = type
 from ansible_collections.infoblox.nios_modules.plugins.modules import nios_a_record
 from ansible_collections.infoblox.nios_modules.plugins.module_utils import api
 from ansible_collections.infoblox.nios_modules.tests.unit.compat.mock import patch, MagicMock, Mock
-from ansible.module_utils.common.validation import check_type_dict
 from .test_nios_module import TestNiosModule, load_fixture
 
 
@@ -39,7 +38,6 @@ class TestNiosARecordModule(TestNiosModule):
         self.mock_wapi = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_a_record.WapiModule')
         self.exec_command = self.mock_wapi.start()
         self.mock_wapi_run = patch('ansible_collections.infoblox.nios_modules.plugins.modules.nios_a_record.WapiModule.run')
-        self.mock_wapi_run.start()
         self.load_config = self.mock_wapi_run.start()
         self.mock_check_type_dict = patch('ansible.module_utils.common.validation.check_type_dict')
         self.mock_check_type_dict_obj = self.mock_check_type_dict.start()
@@ -87,10 +85,11 @@ class TestNiosARecordModule(TestNiosModule):
         self.module.params = {'provider': None, 'state': 'present', 'name': 'a.ansible.com', 'ipv4': '192.168.10.1',
                               'comment': 'updated comment', 'extattrs': None}
 
+        ref = "arecord/ZG5zLm5ldHdvcmtfdmlldyQw:default/true"
         test_object = [
             {
                 "comment": "test comment",
-                "_ref": "arecord/ZG5zLm5ldHdvcmtfdmlldyQw:default/true",
+                "_ref": ref,
                 "name": "a.ansible.com",
                 "ipv4": "192.168.10.1",
                 "extattrs": {}
@@ -106,8 +105,10 @@ class TestNiosARecordModule(TestNiosModule):
 
         wapi = self._get_wapi(test_object)
         res = wapi.run('testobject', test_spec)
-
         self.assertTrue(res['changed'])
+        wapi.update_object.assert_called_once_with(
+            ref, {'comment': 'updated comment', 'ipv4': '192.168.10.1', 'name': 'a.ansible.com'}
+        )
 
     def test_nios_a_record_remove(self):
         self.module.params = {'provider': None, 'state': 'absent', 'name': 'a.ansible.com', 'ipv4': '192.168.10.1',
@@ -140,12 +141,12 @@ class TestNiosARecordModule(TestNiosModule):
         self.module.params = {'provider': None, 'state': 'present', 'name': {'new_name': 'a_new.ansible.com', 'old_name': 'a.ansible.com'},
                               'comment': 'comment', 'extattrs': None}
 
+        ref = "arecord/ZG5zLm5ldHdvcmtfdmlldyQw:default/true"
         test_object = [
             {
                 "comment": "test comment",
-                "_ref": "arecord/ZG5zLm5ldHdvcmtfdmlldyQw:default/true",
-                "name": "a_new.ansible.com",
-                "old_name": "a.ansible.com",
+                "_ref": ref,
+                "name": "a.ansible.com",
                 "extattrs": {}
             }
         ]
@@ -160,4 +161,4 @@ class TestNiosARecordModule(TestNiosModule):
         res = wapi.run('testobject', test_spec)
 
         self.assertTrue(res['changed'])
-        wapi.update_object.called_once_with(test_object)
+        wapi.update_object.assert_called_once_with(ref, {'name': 'a_new.ansible.com', 'comment': 'comment'})
